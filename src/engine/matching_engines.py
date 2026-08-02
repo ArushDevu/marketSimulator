@@ -3,12 +3,29 @@ from engine.order_book import OrderBook
 
 class MatchingEngine:
     """
-    Coordinates order processing and records completed trades.
+    Coordinates order processing, records completed trades,
+    and settles trades between traders.
     """
 
     def __init__(self):
+
         self.order_book = OrderBook()
+
+        # Stores completed trades
         self.trade_history = []
+
+        # trader_id -> Trader object
+        self.traders = {}
+
+
+
+    def register_trader(self, trader):
+        """
+        Adds a trader to the exchange.
+        """
+
+        self.traders[trader.trader_id] = trader
+
 
 
     def submit_order(self, order):
@@ -21,20 +38,71 @@ class MatchingEngine:
 
         trades = self.order_book.process_order(order)
 
-        self.trade_history.extend(trades)
 
-        return trades
+        # Update portfolios after successful trades
+        for trade in trades:
+
+            buyer_id = trade.buy_order.trader_id
+            seller_id = trade.sell_order.trader_id
+
+            # Only settle if both traders are registered
+            if (
+                buyer_id in self.traders
+                and seller_id in self.traders
+            ):
+                self.settle_trade(trade)
+
+
+            self.trade_history.extend(trades)
+
+
+            return trades
+
+
+
+    def settle_trade(self, trade):
+        """
+        Updates buyer and seller portfolios after a trade.
+        """
+
+        buyer = self.traders[
+            trade.buy_order.trader_id
+        ]
+
+        seller = self.traders[
+            trade.sell_order.trader_id
+        ]
+
+
+        # Buyer receives shares and pays money
+        buyer.portfolio.buy(
+            trade.buy_order.symbol,
+            trade.quantity,
+            trade.price
+        )
+
+
+        # Seller gives shares and receives money
+        seller.portfolio.sell(
+            trade.sell_order.symbol,
+            trade.quantity,
+            trade.price
+        )
+
 
 
     def get_trade_history(self):
         """
         Returns all trades executed so far.
         """
+
         return self.trade_history
+
 
 
     def get_best_bid(self):
         return self.order_book.get_best_bid()
+
 
 
     def get_best_ask(self):
