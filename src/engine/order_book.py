@@ -1,3 +1,5 @@
+import heapq
+
 from models.trade import Trade
 from engine.price_level import PriceLevel
 
@@ -14,6 +16,13 @@ class OrderBook:
 
         # Price -> PriceLevel
         self.sell_levels = {}
+
+        # Max heap for BUY prices
+        # (stored as negative values because heapq is a min heap)
+        self.buy_heap = []
+
+        # Min heap for SELL prices
+        self.sell_heap = []
 
         # Order ID -> Order
         # Allows fast order lookup for cancellation
@@ -64,6 +73,11 @@ class OrderBook:
             if order.price not in self.buy_levels:
                 self.buy_levels[order.price] = PriceLevel(order.price)
 
+                heapq.heappush(
+                    self.buy_heap,
+                    -order.price
+                )
+
             self.buy_levels[order.price].add_order(order)
 
 
@@ -71,6 +85,11 @@ class OrderBook:
 
             if order.price not in self.sell_levels:
                 self.sell_levels[order.price] = PriceLevel(order.price)
+
+                heapq.heappush(
+                    self.sell_heap,
+                    order.price
+                )
 
             self.sell_levels[order.price].add_order(order)
 
@@ -128,15 +147,55 @@ class OrderBook:
 
 
 
+    def _get_best_bid_price(self):
+        """
+        Returns the highest BUY price using the heap.
+
+        Stale prices are removed lazily.
+        """
+
+        while self.buy_heap:
+
+            best_price = -self.buy_heap[0]
+
+            if best_price in self.buy_levels:
+                return best_price
+
+            heapq.heappop(self.buy_heap)
+
+        return None
+
+
+
+    def _get_best_ask_price(self):
+        """
+        Returns the lowest SELL price using the heap.
+
+        Stale prices are removed lazily.
+        """
+
+        while self.sell_heap:
+
+            best_price = self.sell_heap[0]
+
+            if best_price in self.sell_levels:
+                return best_price
+
+            heapq.heappop(self.sell_heap)
+
+        return None
+
+
+
     def get_best_bid(self):
         """
         Returns highest priced BUY order.
         """
 
-        if not self.buy_levels:
-            return None
+        best_price = self._get_best_bid_price()
 
-        best_price = max(self.buy_levels.keys())
+        if best_price is None:
+            return None
 
         return self.buy_levels[best_price].get_first_order()
 
@@ -147,10 +206,10 @@ class OrderBook:
         Returns lowest priced SELL order.
         """
 
-        if not self.sell_levels:
-            return None
+        best_price = self._get_best_ask_price()
 
-        best_price = min(self.sell_levels.keys())
+        if best_price is None:
+            return None
 
         return self.sell_levels[best_price].get_first_order()
 
@@ -182,7 +241,10 @@ class OrderBook:
 
         while not order.is_filled() and self.sell_levels:
 
-            best_price = min(self.sell_levels.keys())
+            best_price = self._get_best_ask_price()
+
+            if best_price is None:
+                break
 
             # Limit orders must respect price
             # Market orders always accept the best available sell price
@@ -232,7 +294,10 @@ class OrderBook:
 
         while not order.is_filled() and self.buy_levels:
 
-            best_price = max(self.buy_levels.keys())
+            best_price = self._get_best_bid_price()
+
+            if best_price is None:
+                break
 
             # Limit orders must respect price
             # Market orders always accept the best available buy price
@@ -273,9 +338,9 @@ class OrderBook:
 
 
         return trades
-    
-    
-    
+
+
+
     def get_order_book_depth(self):
         """
         Returns current market depth.
