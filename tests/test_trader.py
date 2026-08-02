@@ -1,11 +1,11 @@
 from models.trader import Trader
-from engine.matching_engines import MatchingEngine
+from engine.exchange import Exchange
 
 
 
 def test_trader_buy_and_sell_orders():
 
-    engine = MatchingEngine()
+    exchange = Exchange()
 
 
     buyer = Trader(
@@ -22,7 +22,7 @@ def test_trader_buy_and_sell_orders():
     )
 
 
-    # Give seller shares first
+    # Give seller shares
     seller.portfolio.buy(
         "AAPL",
         10,
@@ -31,28 +31,26 @@ def test_trader_buy_and_sell_orders():
 
 
     # Register traders so settlement works
-    engine.register_trader(buyer)
-    engine.register_trader(seller)
+    exchange.matching_engine.register_trader(buyer)
+    exchange.matching_engine.register_trader(seller)
 
 
 
-    # Seller submits order using Trader.sell()
+    # Seller submits order
     seller.sell(
         symbol="AAPL",
         quantity=5,
         price=150,
-        engine=engine,
-        timestamp=1
+        exchange=exchange
     )
 
 
-    # Buyer submits order using Trader.buy()
+    # Buyer submits matching order
     trades = buyer.buy(
         symbol="AAPL",
         quantity=5,
         price=150,
-        engine=engine,
-        timestamp=2
+        exchange=exchange
     )
 
 
@@ -62,11 +60,9 @@ def test_trader_buy_and_sell_orders():
     assert trades[0].quantity == 5
 
 
-    # Buyer received shares and paid
+    # Portfolio updates
     assert buyer.get_position("AAPL") == 5
     assert buyer.get_cash() == 9250
 
-
-    # Seller lost shares and received money
     assert seller.get_position("AAPL") == 5
     assert seller.get_cash() == 4750

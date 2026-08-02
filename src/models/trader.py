@@ -23,6 +23,7 @@ class Trader:
         )
 
 
+
     def get_cash(self):
         """
         Returns available cash.
@@ -46,25 +47,24 @@ class Trader:
         symbol,
         quantity,
         price,
-        engine,
-        timestamp
+        exchange
     ):
         """
-        Creates and submits a BUY order.
+        Creates and submits a BUY order through the exchange.
         """
 
         order = Order(
-            order_id=id(self),
+            order_id=exchange.get_next_order_id(),
             trader_id=self.trader_id,
             symbol=symbol,
             side="BUY",
             order_type="LIMIT",
             price=price,
             quantity=quantity,
-            timestamp=timestamp
+            timestamp=exchange.get_timestamp()
         )
 
-        return engine.submit_order(order)
+        return exchange.matching_engine.submit_order(order)
 
 
 
@@ -73,22 +73,21 @@ class Trader:
         symbol,
         quantity,
         price,
-        engine,
-        timestamp
+        exchange
     ):
         """
-        Creates and submits a SELL order.
+        Creates and submits a SELL order through the exchange.
         """
 
         order = Order(
-            order_id=id(self),
+            order_id=exchange.get_next_order_id(),
             trader_id=self.trader_id,
             symbol=symbol,
             side="SELL",
             order_type="LIMIT",
             price=price,
             quantity=quantity,
-            timestamp=timestamp
+            timestamp=exchange.get_timestamp()
         )
 
-        return engine.submit_order(order)
+        return exchange.matching_engine.submit_order(order)
