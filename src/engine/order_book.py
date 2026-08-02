@@ -1,31 +1,33 @@
 from models.trade import Trade
+from engine.price_level import PriceLevel
 
 
 class OrderBook:
     """
-    Stores active buy and sell orders and processes incoming orders.
+    Stores active buy and sell orders grouped by price levels.
     """
 
     def __init__(self):
-        # Active buy orders (highest price first)
-        self.buy_orders = []
 
-        # Active sell orders (lowest price first)
-        self.sell_orders = []
+        # Price -> PriceLevel
+        # Example:
+        # 150 -> PriceLevel containing BUY orders at 150
+        self.buy_levels = {}
+
+        # Price -> PriceLevel
+        self.sell_levels = {}
 
         # Used to generate unique trade IDs
         self.next_trade_id = 1
+
 
 
     def process_order(self, order):
         """
         Processes a new order.
 
-        Attempts to match the order against existing orders.
-        Any unfilled quantity is added to the order book.
-
-        Returns:
-            list: Trade objects created while matching.
+        Attempts to match against existing orders.
+        Any remaining quantity is added to the book.
         """
 
         if order.side == "BUY":
@@ -37,74 +39,94 @@ class OrderBook:
         else:
             raise ValueError("Order side must be BUY or SELL")
 
-        # If the order wasn't completely filled,
-        # store the remaining quantity.
+
         if not order.is_filled():
             self._add_order(order)
+
 
         return trades
 
 
+
     def _add_order(self, order):
         """
-        Adds an unmatched order to the correct side of the book.
+        Adds an unmatched order to its price level.
         """
 
         if order.side == "BUY":
-            self.buy_orders.append(order)
 
-            # Highest price first, then earliest timestamp
-            self.buy_orders.sort(
-                key=lambda o: (-o.price, o.timestamp)
-            )
+            if order.price not in self.buy_levels:
+                self.buy_levels[order.price] = PriceLevel(order.price)
+
+            self.buy_levels[order.price].add_order(order)
+
 
         else:
-            self.sell_orders.append(order)
 
-            # Lowest price first, then earliest timestamp
-            self.sell_orders.sort(
-                key=lambda o: (o.price, o.timestamp)
-            )
+            if order.price not in self.sell_levels:
+                self.sell_levels[order.price] = PriceLevel(order.price)
+
+            self.sell_levels[order.price].add_order(order)
+
 
 
     def remove_order(self, order):
         """
-        Removes an order from the book.
+        Removes an order from its price level.
         """
 
         if order.side == "BUY":
-            self.buy_orders.remove(order)
+
+            level = self.buy_levels[order.price]
 
         else:
-            self.sell_orders.remove(order)
+
+            level = self.sell_levels[order.price]
+
+
+        level.remove_order(order)
+
+
+        # Remove empty price levels
+        if len(level.orders) == 0:
+
+            if order.side == "BUY":
+                del self.buy_levels[order.price]
+
+            else:
+                del self.sell_levels[order.price]
+
 
 
     def get_best_bid(self):
         """
-        Returns the highest buy order.
+        Returns highest priced BUY order.
         """
 
-        if not self.buy_orders:
+        if not self.buy_levels:
             return None
 
-        return self.buy_orders[0]
+        best_price = max(self.buy_levels.keys())
+
+        return self.buy_levels[best_price].get_first_order()
+
 
 
     def get_best_ask(self):
         """
-        Returns the lowest sell order.
+        Returns lowest priced SELL order.
         """
 
-        if not self.sell_orders:
+        if not self.sell_levels:
             return None
 
-        return self.sell_orders[0]
+        best_price = min(self.sell_levels.keys())
+
+        return self.sell_levels[best_price].get_first_order()
+
 
 
     def _create_trade(self, buy_order, sell_order, quantity):
-        """
-        Creates a Trade object for a successful match.
-        """
 
         trade = Trade(
             trade_id=self.next_trade_id,
@@ -112,7 +134,10 @@ class OrderBook:
             sell_order=sell_order,
             price=sell_order.price,
             quantity=quantity,
-            timestamp=max(buy_order.timestamp, sell_order.timestamp)
+            timestamp=max(
+                buy_order.timestamp,
+                sell_order.timestamp
+            )
         )
 
         self.next_trade_id += 1
@@ -120,28 +145,32 @@ class OrderBook:
         return trade
 
 
+
     def _match_buy_order(self, order):
-        """
-        Matches a BUY order against existing SELL orders.
-        """
 
         trades = []
 
-        while (
-            not order.is_filled()
-            and self.sell_orders
-        ):
 
-            best_sell = self.sell_orders[0]
+        while not order.is_filled() and self.sell_levels:
 
-            # Stop if prices do not cross
-            if order.price < best_sell.price:
+
+            best_price = min(self.sell_levels.keys())
+
+            # Prices do not cross
+            if order.price < best_price:
                 break
+
+
+            level = self.sell_levels[best_price]
+
+            best_sell = level.get_first_order()
+
 
             trade_quantity = min(
                 order.remaining_quantity,
                 best_sell.remaining_quantity
             )
+
 
             trade = self._create_trade(
                 buy_order=order,
@@ -149,39 +178,47 @@ class OrderBook:
                 quantity=trade_quantity
             )
 
+
             trades.append(trade)
+
 
             order.fill(trade_quantity)
             best_sell.fill(trade_quantity)
 
+
             if best_sell.is_filled():
                 self.remove_order(best_sell)
+
 
         return trades
 
 
+
     def _match_sell_order(self, order):
-        """
-        Matches a SELL order against existing BUY orders.
-        """
 
         trades = []
 
-        while (
-            not order.is_filled()
-            and self.buy_orders
-        ):
 
-            best_buy = self.buy_orders[0]
+        while not order.is_filled() and self.buy_levels:
 
-            # Stop if prices do not cross
-            if order.price > best_buy.price:
+
+            best_price = max(self.buy_levels.keys())
+
+
+            if order.price > best_price:
                 break
+
+
+            level = self.buy_levels[best_price]
+
+            best_buy = level.get_first_order()
+
 
             trade_quantity = min(
                 order.remaining_quantity,
                 best_buy.remaining_quantity
             )
+
 
             trade = self._create_trade(
                 buy_order=best_buy,
@@ -189,12 +226,16 @@ class OrderBook:
                 quantity=trade_quantity
             )
 
+
             trades.append(trade)
+
 
             order.fill(trade_quantity)
             best_buy.fill(trade_quantity)
 
+
             if best_buy.is_filled():
                 self.remove_order(best_buy)
+
 
         return trades
