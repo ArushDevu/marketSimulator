@@ -239,7 +239,7 @@ class OrderBook:
 
         trades = []
 
-        while not order.is_filled() and self.sell_levels:
+        while not order.is_filled():
 
             best_price = self._get_best_ask_price()
 
@@ -292,7 +292,7 @@ class OrderBook:
 
         trades = []
 
-        while not order.is_filled() and self.buy_levels:
+        while not order.is_filled():
 
             best_price = self._get_best_bid_price()
 
@@ -344,16 +344,24 @@ class OrderBook:
     def get_order_book_depth(self):
         """
         Returns current market depth.
+
+        BUY prices are sorted highest -> lowest.
+        SELL prices are sorted lowest -> highest.
         """
 
         return {
             "buy": {
-                price: level.get_volume()
-                for price, level in self.buy_levels.items()
+                price: self.buy_levels[price].get_volume()
+                for price in sorted(
+                    self.buy_levels.keys(),
+                    reverse=True
+                )
             },
 
             "sell": {
-                price: level.get_volume()
-                for price, level in self.sell_levels.items()
+                price: self.sell_levels[price].get_volume()
+                for price in sorted(
+                    self.sell_levels.keys()
+                )
             }
         }
