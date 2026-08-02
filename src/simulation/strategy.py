@@ -1,19 +1,22 @@
-class Strategy:
-    """
-    Base class for trading strategies.
-    """
+from abc import ABC, abstractmethod
 
+
+class BaseStrategy(ABC):
+    """
+    Base class for all trading strategies.
+    """
 
     def __init__(self, trader):
         self.trader = trader
 
 
-
-    def generate_orders(self, exchange):
+    @abstractmethod
+    def generate_orders(
+        self,
+        exchange,
+        market_data
+    ):
         """
-        Generates orders.
-
-        Must be implemented by subclasses.
+        Generate one or more orders.
         """
-
-        raise NotImplementedError
+        pass

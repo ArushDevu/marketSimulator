@@ -1,5 +1,6 @@
 from simulation.market_data import MarketData
 
+
 class MarketSimulator:
     """
     Runs the market simulation.
@@ -13,7 +14,10 @@ class MarketSimulator:
         self.strategies = []
 
         self.trade_history = []
-        
+
+        # Number of exchange trades already processed
+        self.last_trade_index = 0
+
         self.market_data = MarketData()
 
 
@@ -34,15 +38,22 @@ class MarketSimulator:
 
         for strategy in self.strategies:
 
-            trades = strategy.generate_orders(
-                self.exchange
+            strategy.generate_orders(
+                self.exchange,
+                self.market_data
             )
 
 
-        trades = self.exchange.get_trade_history()
+        all_trades = self.exchange.get_trade_history()
 
-        self.trade_history.extend(trades)
+        new_trades = all_trades[self.last_trade_index:]
 
 
-        for trade in trades:
+        self.trade_history.extend(new_trades)
+
+
+        for trade in new_trades:
             self.market_data.record_trade(trade)
+
+
+        self.last_trade_index = len(all_trades)

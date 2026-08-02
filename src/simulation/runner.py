@@ -20,11 +20,14 @@ sys.path.append(ROOT_DIR)
 
 
 
+from simulation.strategies.momentum import MomentumStrategy
 from engine.exchange import Exchange
 from models.trader import Trader
 from simulation.market_simulator import MarketSimulator
 from simulation.random_strategy import RandomStrategy
 from visualization.live_plot import LivePlot
+
+
 
 
 
@@ -45,6 +48,13 @@ def main():
         name="Trader 2",
         starting_cash=50000
     )
+    
+    
+    trader3 = Trader(
+        trader_id=3,
+        name="Momentum Trader",
+        starting_cash=50000
+    )
 
 
     # Give traders starting inventory
@@ -58,14 +68,21 @@ def main():
         "AAPL",
         100
     )
+    
+    trader3.portfolio.add_position(
+        "AAPL",
+        100
+    )
 
 
     exchange.register_trader(trader1)
     exchange.register_trader(trader2)
+    exchange.register_trader(trader3)
 
 
     strategy1 = RandomStrategy(trader1)
     strategy2 = RandomStrategy(trader2)
+    strategy3 = MomentumStrategy(trader3)
 
 
     simulator = MarketSimulator(exchange)
@@ -73,6 +90,7 @@ def main():
 
     simulator.add_strategy(strategy1)
     simulator.add_strategy(strategy2)
+    simulator.add_strategy(strategy3)
 
 
     # Create live chart

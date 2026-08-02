@@ -35,3 +35,12 @@ class MarketData:
             return None
 
         return self.prices[-1]
+
+
+
+    def get_recent_prices(self, n):
+        """
+        Returns the most recent n prices.
+        """
+
+        return self.prices[-n:]

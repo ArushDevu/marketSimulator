@@ -1,22 +1,29 @@
 import random
-from simulation.strategy import Strategy
+
+from simulation.strategy import BaseStrategy
 
 
 
-class RandomStrategy(Strategy):
+class RandomStrategy(BaseStrategy):
     """
     Randomly buys or sells.
     """
 
 
-    def generate_orders(self, exchange):
+    def generate_orders(
+        self,
+        exchange,
+        market_data
+    ):
 
         symbol = "AAPL"
+
 
         price = random.randint(
             95,
             105
         )
+
 
         quantity = random.randint(
             1,
