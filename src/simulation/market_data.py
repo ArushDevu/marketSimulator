@@ -1,6 +1,10 @@
+import random
+
+
 class MarketData:
     """
-    Stores historical market information.
+    Stores historical market information
+    and simulates external price movement.
     """
 
 
@@ -8,6 +12,28 @@ class MarketData:
 
         self.prices = []
         self.volumes = []
+
+        # Starting market price
+        self.current_price = 100
+
+
+
+    def update_market_price(self):
+        """
+        Simulates external market movement.
+        """
+
+        movement = random.gauss(
+            0,
+            0.5
+        )
+
+        self.current_price += movement
+
+
+        # Prevent unrealistic prices
+        if self.current_price < 10:
+            self.current_price = 10
 
 
 
@@ -24,17 +50,17 @@ class MarketData:
             trade.quantity
         )
 
+        # Market follows executed trades
+        self.current_price = trade.price
+
 
 
     def get_latest_price(self):
         """
-        Returns most recent trade price.
+        Returns current market price.
         """
 
-        if not self.prices:
-            return None
-
-        return self.prices[-1]
+        return self.current_price
 
 
 

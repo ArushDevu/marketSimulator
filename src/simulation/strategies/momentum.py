@@ -24,23 +24,47 @@ class MomentumStrategy(BaseStrategy):
         latest_price = prices[-1]
 
 
-        quantity = 5
+        symbol = "AAPL"
 
+
+        #
+        # Uptrend -> Buy
+        #
 
         if latest_price > oldest_price:
 
+            max_quantity = int(
+                self.trader.get_cash() // latest_price
+            )
+
+            if max_quantity <= 0:
+                return []
+
+            quantity = min(5, max_quantity)
+
             return self.trader.buy(
-                symbol="AAPL",
+                symbol=symbol,
                 quantity=quantity,
                 price=latest_price,
                 exchange=exchange
             )
 
 
+        #
+        # Downtrend -> Sell
+        #
+
         elif latest_price < oldest_price:
 
+            shares = self.trader.get_position(symbol)
+
+            if shares <= 0:
+                return []
+
+            quantity = min(5, shares)
+
             return self.trader.sell(
-                symbol="AAPL",
+                symbol=symbol,
                 quantity=quantity,
                 price=latest_price,
                 exchange=exchange

@@ -30,6 +30,9 @@ class OrderBook:
 
         # Used to generate unique trade IDs
         self.next_trade_id = 1
+        
+        # Current simulation step
+        self.current_step = 0
 
 
 
@@ -41,17 +44,29 @@ class OrderBook:
         Any remaining quantity is added to the book.
         """
 
+        # Remove expired orders before matching
+        self.remove_expired_orders()
+
+
         if order.side == "BUY":
+
             trades = self._match_buy_order(order)
 
+
         elif order.side == "SELL":
+
             trades = self._match_sell_order(order)
 
+
         else:
-            raise ValueError("Order side must be BUY or SELL")
+
+            raise ValueError(
+                "Order side must be BUY or SELL"
+            )
 
 
         if not order.is_filled():
+
             self._add_order(order)
 
 
@@ -339,6 +354,27 @@ class OrderBook:
 
         return trades
 
+
+
+    def remove_expired_orders(self):
+        """
+        Removes orders that have passed their expiry step.
+        """
+
+        expired_orders = []
+
+
+        for order in list(self.orders.values()):
+
+            if order.is_expired(self.current_step):
+
+                expired_orders.append(order)
+
+
+
+        for order in expired_orders:
+
+            self.remove_order(order)
 
 
     def get_order_book_depth(self):

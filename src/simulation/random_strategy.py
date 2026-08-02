@@ -6,7 +6,7 @@ from simulation.strategy import BaseStrategy
 
 class RandomStrategy(BaseStrategy):
     """
-    Randomly buys or sells.
+    Randomly buys or sells around the current market price.
     """
 
 
@@ -19,24 +19,69 @@ class RandomStrategy(BaseStrategy):
         symbol = "AAPL"
 
 
-        price = random.randint(
-            95,
-            105
+        #
+        # Use current market price
+        #
+
+        current_price = market_data.get_latest_price()
+
+
+        # Simulation start price
+        if current_price is None:
+            current_price = 100
+
+
+
+        #
+        # Random trader submits slightly noisy orders
+        #
+
+        price = random.gauss(
+            current_price,
+            2
         )
 
 
-        quantity = random.randint(
-            1,
-            10
-        )
+        #
+        # Prevent impossible prices
+        #
+
+        if price <= 0:
+            return None
+
 
 
         side = random.choice(
-            ["BUY", "SELL"]
+            [
+                "BUY",
+                "SELL"
+            ]
         )
 
 
+
         if side == "BUY":
+
+
+            #
+            # Buy only what we can afford
+            #
+
+            max_quantity = int(
+                self.trader.get_cash() // price
+            )
+
+
+            if max_quantity <= 0:
+                return None
+
+
+
+            quantity = random.randint(
+                1,
+                min(10, max_quantity)
+            )
+
 
             return self.trader.buy(
                 symbol,
@@ -46,7 +91,29 @@ class RandomStrategy(BaseStrategy):
             )
 
 
+
         else:
+
+
+            #
+            # Sell only shares owned
+            #
+
+            shares = self.trader.get_position(
+                symbol
+            )
+
+
+            if shares <= 0:
+                return None
+
+
+
+            quantity = random.randint(
+                1,
+                min(10, shares)
+            )
+
 
             return self.trader.sell(
                 symbol,

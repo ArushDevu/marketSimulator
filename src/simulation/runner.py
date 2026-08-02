@@ -27,6 +27,7 @@ from simulation.market_simulator import MarketSimulator
 from simulation.random_strategy import RandomStrategy
 from visualization.live_plot import LivePlot
 from simulation.strategies.market_maker import MarketMakerStrategy
+from analytics.performance import PerformanceAnalyzer
 
 
 
@@ -88,6 +89,16 @@ def main():
     )
 
 
+    # Record each trader's starting net worth
+    initial_prices = {
+        "AAPL": 100
+    }
+
+    trader1.initialize_starting_value(initial_prices)
+    trader2.initialize_starting_value(initial_prices)
+    trader3.initialize_starting_value(initial_prices)
+    trader4.initialize_starting_value(initial_prices)
+
     exchange.register_trader(trader1)
     exchange.register_trader(trader2)
     exchange.register_trader(trader3)
@@ -113,7 +124,7 @@ def main():
     plot = LivePlot()
 
 
-    for step in range(100):
+    for step in range(1000):
 
         simulator.run_step()
 
@@ -123,7 +134,8 @@ def main():
 
         plot.update(
             step,
-            latest_price
+            latest_price,
+            simulator.return_history
         )
 
 
@@ -146,6 +158,121 @@ def main():
         "VWAP:",
         simulator.market_data.get_vwap()
     )
+
+
+    latest_price = simulator.market_data.get_latest_price()
+
+    current_prices = {
+        "AAPL": latest_price
+    }
+
+
+    print("\nTrader Performance")
+    print("-" * 40)
+
+
+    for trader in [
+        trader1,
+        trader2,
+        trader3,
+        trader4
+    ]:
+
+        print(trader.name)
+
+        print(
+            "Cash:",
+            round(
+                trader.get_cash(),
+                2
+            )
+        )
+
+        print(
+            "Shares:",
+            trader.get_position("AAPL")
+        )
+
+        print(
+            "Net Worth:",
+            round(
+                trader.get_net_worth(current_prices),
+                2
+            )
+        )
+
+        print(
+            "PnL:",
+            round(
+                trader.get_pnl(current_prices),
+                2
+            )
+        )
+
+        print()
+
+
+
+    print("\nPnL History")
+
+    for trader_name, history in simulator.pnl_history.items():
+        print(
+            trader_name,
+            len(history),
+        )
+
+
+    #
+    # Performance Metrics
+    #
+
+    analyzer = PerformanceAnalyzer()
+
+
+    print("\nPerformance Metrics")
+    print("-" * 40)
+
+
+    for trader_name, history in simulator.equity_history.items():
+
+        returns = analyzer.calculate_returns(
+            history
+        )
+
+        sharpe = analyzer.calculate_sharpe(
+            returns
+        )
+
+        drawdown = analyzer.calculate_max_drawdown(
+            history
+        )
+
+
+        print(
+            trader_name
+        )
+
+        print(
+            "Sharpe:",
+            round(
+                sharpe,
+                3
+            )
+        )
+
+        print(
+            "Max Drawdown:",
+            round(
+                drawdown,
+                3
+            ),
+            "%"
+        )
+
+        print()
+
+
+
 
 
     # Keep graph open after simulation ends
