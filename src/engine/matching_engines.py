@@ -107,3 +107,8 @@ class MatchingEngine:
 
     def get_best_ask(self):
         return self.order_book.get_best_ask()
+    
+    
+    
+    def get_order_book_depth(self):
+        return self.order_book.get_order_book_depth()

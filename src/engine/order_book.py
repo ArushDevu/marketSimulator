@@ -273,3 +273,22 @@ class OrderBook:
 
 
         return trades
+    
+    
+    
+    def get_order_book_depth(self):
+        """
+        Returns current market depth.
+        """
+
+        return {
+            "buy": {
+                price: level.get_volume()
+                for price, level in self.buy_levels.items()
+            },
+
+            "sell": {
+                price: level.get_volume()
+                for price, level in self.sell_levels.items()
+            }
+        }
