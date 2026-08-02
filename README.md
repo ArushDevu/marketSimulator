@@ -1,27 +1,29 @@
-# Market Simulator
+## Order Book Performance Benchmark
 
-A simulated exchange and market microstructure research platform.
+The order book uses heap-based priority queues to efficiently retrieve the best bid and ask prices.
 
-## Current Features
+Benchmark configuration:
 
-## Planned Features
+- Price levels: 100,000
+- Lookups tested: 100,000
 
-An order is:
-- BUY or SELL
-- a quantity
-- a price
+| Method | Time |
+|---|---:|
+| Heap priority queue | 0.00919 seconds |
+| Dictionary max() scan | 78.83785 seconds |
 
-A BUY order means:
-"I am willing to pay up to this price."
+Speed improvement:
 
-A SELL order means:
-"I am willing to accept at least this price."
+~8,500x faster
 
-A trade can happen when:
-highest BUY price >= lowest SELL price.
+### Complexity
 
-BUY $100, SELL $99 → trade
-BUY $98, SELL $99 → no trade
-BUY 100 units, SELL 40 units → 40 trade, 60 remain
-BUY 40 units, SELL 100 units → 40 trade, seller has 60 remain
-BUY $100, SELL $100 → trade
+| Operation | Old approach | Heap approach |
+|---|---|---|
+| Best bid retrieval | O(n) | O(1) |
+| Best ask retrieval | O(n) | O(1) |
+
+The heap implementation uses:
+- Max heap for buy prices
+- Min heap for sell prices
+- Lazy deletion for stale price levels
