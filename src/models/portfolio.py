@@ -28,7 +28,6 @@ class Portfolio:
         self.holdings[symbol] += quantity
 
 
-
     def sell(self, symbol, quantity, price):
         """
         Removes shares and adds cash.
@@ -45,10 +44,23 @@ class Portfolio:
         self.cash += quantity * price
 
 
-
     def get_position(self, symbol):
         """
         Returns number of shares owned.
         """
 
         return self.holdings.get(symbol, 0)
+
+
+    def add_position(self, symbol, quantity):
+        """
+        Adds starting shares without affecting cash.
+        """
+
+        if quantity <= 0:
+            raise ValueError("Quantity must be positive")
+
+        if symbol not in self.holdings:
+            self.holdings[symbol] = 0
+
+        self.holdings[symbol] += quantity
