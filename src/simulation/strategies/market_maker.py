@@ -1,29 +1,41 @@
-from simulation.strategy import Strategy
+from simulation.strategy import BaseStrategy
 
 
-class MarketMaker(Strategy):
+class MarketMakerStrategy(BaseStrategy):
     """
-    Places buy and sell orders around the current market price.
+    Provides liquidity by placing buy and sell orders
+    around the current market price.
     """
 
-    def generate_orders(self, exchange):
 
-        latest_price = exchange.market_data.get_latest_price()
+    def generate_orders(
+        self,
+        exchange,
+        market_data
+    ):
 
-        if latest_price is None:
-            latest_price = 100
-
-
-        spread = 1
-
-
-        buy_price = latest_price - spread
-        sell_price = latest_price + spread
+        current_price = market_data.get_latest_price()
 
 
-        quantity = 5
+        # No market price yet
+        # Start around a reasonable value
+        if current_price is None:
+            current_price = 100
 
 
+
+        spread = 2
+
+
+        buy_price = current_price - spread // 2
+        sell_price = current_price + spread // 2
+
+
+        quantity = 10
+
+
+
+        # Place buy order
         self.trader.buy(
             symbol="AAPL",
             quantity=quantity,
@@ -32,6 +44,8 @@ class MarketMaker(Strategy):
         )
 
 
+
+        # Place sell order
         self.trader.sell(
             symbol="AAPL",
             quantity=quantity,

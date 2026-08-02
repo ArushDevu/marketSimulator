@@ -38,9 +38,45 @@ class MarketData:
 
 
 
-    def get_recent_prices(self, n):
+    def get_recent_prices(self, count):
         """
-        Returns the most recent n prices.
+        Returns the last N prices.
         """
 
-        return self.prices[-n:]
+        return self.prices[-count:]
+
+
+
+    def get_total_volume(self):
+        """
+        Returns total traded volume.
+        """
+
+        return sum(self.volumes)
+
+
+
+    def get_vwap(self):
+        """
+        Returns volume weighted average price.
+        """
+
+        if not self.prices:
+            return None
+
+
+        total_value = sum(
+            price * volume
+            for price, volume in zip(
+                self.prices,
+                self.volumes
+            )
+        )
+
+
+        total_volume = sum(
+            self.volumes
+        )
+
+
+        return total_value / total_volume

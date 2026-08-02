@@ -26,6 +26,7 @@ from models.trader import Trader
 from simulation.market_simulator import MarketSimulator
 from simulation.random_strategy import RandomStrategy
 from visualization.live_plot import LivePlot
+from simulation.strategies.market_maker import MarketMakerStrategy
 
 
 
@@ -55,6 +56,13 @@ def main():
         name="Momentum Trader",
         starting_cash=50000
     )
+    
+    
+    trader4 = Trader(
+        trader_id=4,
+        name="Market Maker",
+        starting_cash=50000
+    )
 
 
     # Give traders starting inventory
@@ -73,16 +81,23 @@ def main():
         "AAPL",
         100
     )
+    
+    trader4.portfolio.add_position(
+        "AAPL",
+        500
+    )
 
 
     exchange.register_trader(trader1)
     exchange.register_trader(trader2)
     exchange.register_trader(trader3)
+    exchange.register_trader(trader4)
 
 
     strategy1 = RandomStrategy(trader1)
     strategy2 = RandomStrategy(trader2)
     strategy3 = MomentumStrategy(trader3)
+    strategy4 = MarketMakerStrategy(trader4)
 
 
     simulator = MarketSimulator(exchange)
@@ -91,6 +106,7 @@ def main():
     simulator.add_strategy(strategy1)
     simulator.add_strategy(strategy2)
     simulator.add_strategy(strategy3)
+    simulator.add_strategy(strategy4)
 
 
     # Create live chart
@@ -121,8 +137,14 @@ def main():
 
 
     print(
-        "Latest price:",
-        simulator.market_data.get_latest_price()
+        "Total volume:",
+        simulator.market_data.get_total_volume()
+    )
+
+
+    print(
+        "VWAP:",
+        simulator.market_data.get_vwap()
     )
 
 
