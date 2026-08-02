@@ -10,12 +10,14 @@ class OrderBook:
     def __init__(self):
 
         # Price -> PriceLevel
-        # Example:
-        # 150 -> PriceLevel containing BUY orders at 150
         self.buy_levels = {}
 
         # Price -> PriceLevel
         self.sell_levels = {}
+
+        # Order ID -> Order
+        # Allows fast order lookup for cancellation
+        self.orders = {}
 
         # Used to generate unique trade IDs
         self.next_trade_id = 1
@@ -53,6 +55,10 @@ class OrderBook:
         Adds an unmatched order to its price level.
         """
 
+        # Store for cancellation lookup
+        self.orders[order.order_id] = order
+
+
         if order.side == "BUY":
 
             if order.price not in self.buy_levels:
@@ -76,15 +82,18 @@ class OrderBook:
         """
 
         if order.side == "BUY":
-
             level = self.buy_levels[order.price]
 
         else:
-
             level = self.sell_levels[order.price]
 
 
         level.remove_order(order)
+
+
+        # Remove from order lookup
+        if order.order_id in self.orders:
+            del self.orders[order.order_id]
 
 
         # Remove empty price levels
@@ -95,6 +104,27 @@ class OrderBook:
 
             else:
                 del self.sell_levels[order.price]
+
+
+
+    def cancel_order(self, order_id):
+        """
+        Cancels an active order.
+
+        Returns:
+            True if cancelled successfully
+            False if order does not exist
+        """
+
+        if order_id not in self.orders:
+            return False
+
+
+        order = self.orders[order_id]
+
+        self.remove_order(order)
+
+        return True
 
 
 
@@ -150,13 +180,10 @@ class OrderBook:
 
         trades = []
 
-
         while not order.is_filled() and self.sell_levels:
-
 
             best_price = min(self.sell_levels.keys())
 
-            # Prices do not cross
             if order.price < best_price:
                 break
 
@@ -198,12 +225,9 @@ class OrderBook:
 
         trades = []
 
-
         while not order.is_filled() and self.buy_levels:
 
-
             best_price = max(self.buy_levels.keys())
-
 
             if order.price > best_price:
                 break
