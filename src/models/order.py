@@ -19,10 +19,21 @@ class Order:
         if quantity <= 0:
             raise ValueError("Quantity must be positive!")
         
-        # Limit orders need a price because execution depends on this value
+
+        # Only allow supported order types
+        if order_type not in ["LIMIT", "MARKET"]:
+            raise ValueError(
+                "Order type must be LIMIT or MARKET"
+            )
+
+
+        # Limit orders need a price
         if order_type == "LIMIT" and price is None:
-            raise ValueError("Limit orders need a price")
-        
+            raise ValueError(
+                "Limit orders need a price"
+            )
+
+
         self.order_id = order_id
         self.trader_id = trader_id
         self.symbol = symbol
@@ -35,6 +46,7 @@ class Order:
         self.remaining_quantity = quantity
         
         self.timestamp = timestamp
+
         
     
     def is_filled(self):
@@ -50,9 +62,13 @@ class Order:
         """
         
         if quantity <= 0:
-            raise ValueError("Fill quantity must be positive")
+            raise ValueError(
+                "Fill quantity must be positive"
+            )
         
         if quantity > self.remaining_quantity:
-            raise ValueError("Cannot fill more than remaining quantity")
+            raise ValueError(
+                "Cannot fill more than remaining quantity"
+            )
 
         self.remaining_quantity -= quantity

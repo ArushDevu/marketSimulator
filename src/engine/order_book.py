@@ -184,7 +184,12 @@ class OrderBook:
 
             best_price = min(self.sell_levels.keys())
 
-            if order.price < best_price:
+            # Limit orders must respect price
+            # Market orders always accept the best available sell price
+            if (
+                order.order_type == "LIMIT"
+                and order.price < best_price
+            ):
                 break
 
 
@@ -229,7 +234,12 @@ class OrderBook:
 
             best_price = max(self.buy_levels.keys())
 
-            if order.price > best_price:
+            # Limit orders must respect price
+            # Market orders always accept the best available buy price
+            if (
+                order.order_type == "LIMIT"
+                and order.price > best_price
+            ):
                 break
 
 
