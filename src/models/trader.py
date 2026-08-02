@@ -1,4 +1,5 @@
 from models.portfolio import Portfolio
+from models.order import Order
 
 
 class Trader:
@@ -37,3 +38,57 @@ class Trader:
         """
 
         return self.portfolio.get_position(symbol)
+
+
+
+    def buy(
+        self,
+        symbol,
+        quantity,
+        price,
+        engine,
+        timestamp
+    ):
+        """
+        Creates and submits a BUY order.
+        """
+
+        order = Order(
+            order_id=id(self),
+            trader_id=self.trader_id,
+            symbol=symbol,
+            side="BUY",
+            order_type="LIMIT",
+            price=price,
+            quantity=quantity,
+            timestamp=timestamp
+        )
+
+        return engine.submit_order(order)
+
+
+
+    def sell(
+        self,
+        symbol,
+        quantity,
+        price,
+        engine,
+        timestamp
+    ):
+        """
+        Creates and submits a SELL order.
+        """
+
+        order = Order(
+            order_id=id(self),
+            trader_id=self.trader_id,
+            symbol=symbol,
+            side="SELL",
+            order_type="LIMIT",
+            price=price,
+            quantity=quantity,
+            timestamp=timestamp
+        )
+
+        return engine.submit_order(order)
