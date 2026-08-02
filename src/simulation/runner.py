@@ -1,18 +1,30 @@
 import sys
 import os
 
-sys.path.append(
-    os.path.join(
-        os.path.dirname(__file__),
-        ".."
-    )
+
+CURRENT_DIR = os.path.dirname(__file__)
+
+SRC_DIR = os.path.join(
+    CURRENT_DIR,
+    ".."
 )
+
+ROOT_DIR = os.path.join(
+    CURRENT_DIR,
+    "../.."
+)
+
+
+sys.path.append(SRC_DIR)
+sys.path.append(ROOT_DIR)
+
 
 
 from engine.exchange import Exchange
 from models.trader import Trader
 from simulation.market_simulator import MarketSimulator
 from simulation.random_strategy import RandomStrategy
+from visualization.live_plot import LivePlot
 
 
 
@@ -63,9 +75,22 @@ def main():
     simulator.add_strategy(strategy2)
 
 
+    # Create live chart
+    plot = LivePlot()
+
+
     for step in range(100):
 
         simulator.run_step()
+
+
+        latest_price = simulator.market_data.get_latest_price()
+
+
+        plot.update(
+            step,
+            latest_price
+        )
 
 
     print("Simulation complete")
@@ -81,6 +106,10 @@ def main():
         "Latest price:",
         simulator.market_data.get_latest_price()
     )
+
+
+    # Keep graph open after simulation ends
+    plot.show()
 
 
 
