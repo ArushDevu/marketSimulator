@@ -26,6 +26,9 @@ def test_exchange_best_bid_and_ask():
     exchange.register_trader(buyer)
     exchange.register_trader(seller)
 
+    # Seller needs to actually own shares before it can sell them
+    seller.portfolio.add_position("AAPL", 10)
+
 
     seller.sell(
         "AAPL",
@@ -92,4 +95,4 @@ def test_market_data_records_trade():
 
 
     assert data.get_latest_price() == 150
-    assert data.volumes[0] == 10
+    assert data.volumes["AAPL"][0] == 10

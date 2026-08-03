@@ -22,6 +22,9 @@ sys.path.append(ROOT_DIR)
 
 from simulation.strategies.momentum import MomentumStrategy
 from simulation.strategies.mean_reversion import MeanReversionStrategy
+from simulation.strategies.noise_trader import NoiseTraderStrategy
+from simulation.strategies.arbitrage import ArbitrageStrategy
+from simulation.strategies.whale import WhaleStrategy
 from engine.exchange import Exchange
 from models.trader import Trader
 from simulation.market_simulator import MarketSimulator
@@ -32,6 +35,13 @@ from analytics.performance import PerformanceAnalyzer
 
 
 
+SYMBOLS = ["AAPL", "GOOG"]
+
+STARTING_PRICES = {
+    "AAPL": 100,
+    "GOOG": 150
+}
+
 
 
 def main():
@@ -39,102 +49,71 @@ def main():
     exchange = Exchange()
 
 
-    trader1 = Trader(
-        trader_id=1,
-        name="Trader 1",
-        starting_cash=50000
-    )
+    trader1 = Trader(trader_id=1, name="Trader 1", starting_cash=50000)
+    trader2 = Trader(trader_id=2, name="Trader 2", starting_cash=50000)
+    trader3 = Trader(trader_id=3, name="Momentum Trader", starting_cash=50000)
+    trader4 = Trader(trader_id=4, name="Market Maker", starting_cash=100000)
+    trader5 = Trader(trader_id=5, name="Mean Reversion Trader", starting_cash=50000)
+    trader6 = Trader(trader_id=6, name="Noise Trader", starting_cash=50000)
+    trader7 = Trader(trader_id=7, name="Arbitrageur", starting_cash=50000)
+    trader8 = Trader(trader_id=8, name="Whale", starting_cash=200000)
 
 
-    trader2 = Trader(
-        trader_id=2,
-        name="Trader 2",
-        starting_cash=50000
-    )
+    all_traders = [
+        trader1, trader2, trader3, trader4,
+        trader5, trader6, trader7, trader8
+    ]
 
 
-    trader3 = Trader(
-        trader_id=3,
-        name="Momentum Trader",
-        starting_cash=50000
-    )
-
-
-    trader4 = Trader(
-        trader_id=4,
-        name="Market Maker",
-        starting_cash=100000
-    )
-
-
-    trader5 = Trader(
-        trader_id=5,
-        name="Mean Reversion Trader",
-        starting_cash=50000
-    )
-
-
-    # Give traders starting inventory
-    # without spending their cash
-    trader1.portfolio.add_position(
-        "AAPL",
-        100
-    )
-
-    trader2.portfolio.add_position(
-        "AAPL",
-        100
-    )
-
-    trader3.portfolio.add_position(
-        "AAPL",
-        100
-    )
-
-    trader4.portfolio.add_position(
-        "AAPL",
-        1000
-    )
-
-    trader5.portfolio.add_position(
-        "AAPL",
-        100
-    )
-
-
-    # Record each trader's starting net worth
-    initial_prices = {
-        "AAPL": 100
+    # Give traders starting inventory in both symbols, without
+    # spending their cash
+    starting_positions = {
+        trader1: 100, trader2: 100, trader3: 100,
+        trader4: 1000, trader5: 100, trader6: 100,
+        trader7: 100, trader8: 100
     }
 
-    trader1.initialize_starting_value(initial_prices)
-    trader2.initialize_starting_value(initial_prices)
-    trader3.initialize_starting_value(initial_prices)
-    trader4.initialize_starting_value(initial_prices)
-    trader5.initialize_starting_value(initial_prices)
+    for trader, quantity in starting_positions.items():
 
-    exchange.register_trader(trader1)
-    exchange.register_trader(trader2)
-    exchange.register_trader(trader3)
-    exchange.register_trader(trader4)
-    exchange.register_trader(trader5)
+        trader.portfolio.add_position("AAPL", quantity)
+        trader.portfolio.add_position("GOOG", quantity)
 
 
-    strategy1 = RandomStrategy(trader1)
-    strategy2 = RandomStrategy(trader2)
-    strategy3 = MomentumStrategy(trader3)
-    strategy4 = MarketMakerStrategy(trader4)
-    strategy5 = MeanReversionStrategy(trader5)
+    for trader in all_traders:
+        exchange.register_trader(trader)
 
 
-    simulator = MarketSimulator(exchange)
+    # AAPL strategies
+    strategy1 = RandomStrategy(trader1, symbol="AAPL")
+    strategy3 = MomentumStrategy(trader3, symbol="AAPL")
+    strategy4 = MarketMakerStrategy(trader4, symbol="AAPL")
+    strategy5 = MeanReversionStrategy(trader5, symbol="AAPL")
+    strategy6 = NoiseTraderStrategy(trader6, symbol="AAPL")
+    strategy7 = ArbitrageStrategy(trader7, symbol="AAPL")
+    strategy8 = WhaleStrategy(
+        trader8,
+        symbol="AAPL",
+        side="BUY",
+        total_quantity=500,
+        slice_quantity=10
+    )
+
+    # GOOG strategy, to prove multi-symbol actually works
+    strategy2 = RandomStrategy(trader2, symbol="GOOG")
 
 
-    simulator.add_strategy(strategy1)
-    simulator.add_strategy(strategy2)
-    simulator.add_strategy(strategy3)
-    simulator.add_strategy(strategy4)
-    simulator.add_strategy(strategy5)
+    simulator = MarketSimulator(
+        exchange,
+        symbols=SYMBOLS,
+        starting_prices=STARTING_PRICES
+    )
+
+
+    for strategy in [
+        strategy1, strategy2, strategy3, strategy4,
+        strategy5, strategy6, strategy7, strategy8
+    ]:
+        simulator.add_strategy(strategy)
 
 
     # Create live chart
@@ -146,7 +125,7 @@ def main():
         simulator.run_step()
 
 
-        latest_price = simulator.market_data.get_latest_price()
+        latest_price = simulator.market_data.get_latest_price("AAPL")
 
 
         plot.update(
@@ -166,21 +145,22 @@ def main():
 
 
     print(
-        "Total volume:",
+        "Total volume (all symbols):",
         simulator.market_data.get_total_volume()
     )
 
 
-    print(
-        "VWAP:",
-        simulator.market_data.get_vwap()
-    )
+    for symbol in SYMBOLS:
 
+        print(
+            f"VWAP ({symbol}):",
+            simulator.market_data.get_vwap(symbol)
+        )
 
-    latest_price = simulator.market_data.get_latest_price()
 
     current_prices = {
-        "AAPL": latest_price
+        symbol: simulator.market_data.get_latest_price(symbol)
+        for symbol in SYMBOLS
     }
 
 
@@ -188,56 +168,20 @@ def main():
     print("-" * 40)
 
 
-    for trader in [
-        trader1,
-        trader2,
-        trader3,
-        trader4,
-        trader5
-    ]:
+    for trader in all_traders:
 
         print(trader.name)
 
-        print(
-            "Cash:",
-            round(
-                trader.get_cash(),
-                2
-            )
-        )
+        print("Cash:", round(trader.get_cash(), 2))
 
-        print(
-            "Shares:",
-            trader.get_position("AAPL")
-        )
+        for symbol in SYMBOLS:
+            print(f"{symbol} Shares:", trader.get_position(symbol))
 
-        print(
-            "Net Worth:",
-            round(
-                trader.get_net_worth(current_prices),
-                2
-            )
-        )
-
-        print(
-            "PnL:",
-            round(
-                trader.get_pnl(current_prices),
-                2
-            )
-        )
+        print("Net Worth:", round(trader.get_net_worth(current_prices), 2))
+        print("PnL:", round(trader.get_pnl(current_prices), 2))
 
         print()
 
-
-
-    print("\nPnL History")
-
-    for trader_name, history in simulator.pnl_history.items():
-        print(
-            trader_name,
-            len(history),
-        )
 
 
     #
@@ -253,43 +197,14 @@ def main():
 
     for trader_name, history in simulator.equity_history.items():
 
-        returns = analyzer.calculate_returns(
-            history
-        )
+        returns = analyzer.calculate_returns(history)
+        sharpe = analyzer.calculate_sharpe(returns)
+        drawdown = analyzer.calculate_max_drawdown(history)
 
-        sharpe = analyzer.calculate_sharpe(
-            returns
-        )
-
-        drawdown = analyzer.calculate_max_drawdown(
-            history
-        )
-
-
-        print(
-            trader_name
-        )
-
-        print(
-            "Sharpe:",
-            round(
-                sharpe,
-                3
-            )
-        )
-
-        print(
-            "Max Drawdown:",
-            round(
-                drawdown,
-                3
-            ),
-            "%"
-        )
-
+        print(trader_name)
+        print("Sharpe:", round(sharpe, 3))
+        print("Max Drawdown:", round(drawdown, 3), "%")
         print()
-
-
 
 
 

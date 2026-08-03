@@ -90,7 +90,10 @@ class LivePlot:
             "Trader 2": "green",
             "Momentum Trader": "orange",
             "Market Maker": "red",
-            "Mean Reversion Trader": "purple"
+            "Mean Reversion Trader": "purple",
+            "Noise Trader": "gray",
+            "Arbitrageur": "gold",
+            "Whale": "black"
         }
 
 
