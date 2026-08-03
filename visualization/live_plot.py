@@ -89,7 +89,8 @@ class LivePlot:
             "Trader 1": "blue",
             "Trader 2": "green",
             "Momentum Trader": "orange",
-            "Market Maker": "red"
+            "Market Maker": "red",
+            "Mean Reversion Trader": "purple"
         }
 
 

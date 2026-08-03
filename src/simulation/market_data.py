@@ -13,8 +13,11 @@ class MarketData:
         self.prices = []
         self.volumes = []
 
-        # Starting market price
+        # External fair value (random market movement)
         self.current_price = 100
+
+        # Actual last executed trade price
+        self.last_trade_price = 100
 
 
 
@@ -50,17 +53,18 @@ class MarketData:
             trade.quantity
         )
 
-        # Market follows executed trades
-        self.current_price = trade.price
+        # Actual market price follows executed trades
+        self.last_trade_price = trade.price
+
 
 
 
     def get_latest_price(self):
         """
-        Returns current market price.
+        Returns last executed trade price.
         """
 
-        return self.current_price
+        return self.last_trade_price
 
 
 
@@ -71,6 +75,14 @@ class MarketData:
 
         return self.prices[-count:]
 
+
+
+    def get_fair_price(self):
+        """
+        Returns simulated external market value.
+        """
+
+        return self.current_price
 
 
     def get_total_volume(self):

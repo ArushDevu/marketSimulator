@@ -9,7 +9,6 @@ class MarketMakerStrategy(BaseStrategy):
     """
 
 
-
     def generate_orders(
         self,
         exchange,
@@ -17,7 +16,7 @@ class MarketMakerStrategy(BaseStrategy):
     ):
 
 
-        current_price = market_data.get_latest_price()
+        current_price = market_data.get_fair_price()
 
 
         if current_price is None:
@@ -37,8 +36,8 @@ class MarketMakerStrategy(BaseStrategy):
         # Inventory limits
         #
 
-        max_inventory = 600
-        min_inventory = 100
+        max_inventory = 200
+        min_inventory = 50
 
 
 
@@ -51,13 +50,15 @@ class MarketMakerStrategy(BaseStrategy):
 
 
         #
-        # Adjust spread based on inventory
+        # Adjust prices based on inventory
         #
 
         if shares > max_inventory:
 
+            #
             # Too many shares
-            # Make selling easier
+            # Encourage selling
+            #
 
             buy_price = current_price - 3
             sell_price = current_price + 0.5
@@ -66,8 +67,10 @@ class MarketMakerStrategy(BaseStrategy):
 
         elif shares < min_inventory:
 
+            #
             # Too few shares
-            # Make buying easier
+            # Encourage buying
+            #
 
             buy_price = current_price - 0.5
             sell_price = current_price + 3
@@ -76,21 +79,28 @@ class MarketMakerStrategy(BaseStrategy):
 
         else:
 
+            #
+            # Balanced inventory
+            #
+
             buy_price = current_price - spread / 2
             sell_price = current_price + spread / 2
 
 
 
 
-        quantity = 10
+        quantity = 5
 
 
 
         #
-        # Submit buy order
+        # Buy only if inventory is below maximum
         #
 
-        if cash >= buy_price * quantity:
+        if (
+            shares < max_inventory
+            and cash >= buy_price * quantity
+        ):
 
             self.trader.buy(
                 symbol="AAPL",
@@ -102,10 +112,10 @@ class MarketMakerStrategy(BaseStrategy):
 
 
         #
-        # Submit sell order
+        # Sell only if inventory is above minimum
         #
 
-        if shares >= quantity:
+        if shares > min_inventory:
 
             self.trader.sell(
                 symbol="AAPL",

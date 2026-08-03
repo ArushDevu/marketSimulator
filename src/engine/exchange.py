@@ -74,8 +74,17 @@ class Exchange:
         """
 
         return self.matching_engine.get_trade_history()
-    
-    
-    
+
+
+
+    def cancel_order(self, order_id):
+        """
+        Cancels an active order.
+        """
+
+        return self.matching_engine.cancel_order(order_id)
+
+
+
     def get_order_book_depth(self):
         return self.matching_engine.get_order_book_depth()

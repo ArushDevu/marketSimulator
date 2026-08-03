@@ -41,6 +41,14 @@ class MatchingEngine:
         self.order_book.current_step = order.timestamp
 
 
+        # Remove any orders that have expired and give their
+        # traders back the cash/shares that were reserved for them.
+        expired_orders = self.order_book.remove_expired_orders()
+
+        for expired_order in expired_orders:
+            self._release_reservation(expired_order)
+
+
         trades = self.order_book.process_order(order)
 
 
@@ -67,6 +75,56 @@ class MatchingEngine:
 
 
 
+    def cancel_order(self, order_id):
+        """
+        Cancels an active order and releases any cash/shares
+        that were reserved for it.
+        """
+
+        order = self.order_book.orders.get(order_id)
+
+        if order is None:
+            return False
+
+
+        cancelled = self.order_book.cancel_order(order_id)
+
+        if cancelled:
+            self._release_reservation(order)
+
+
+        return cancelled
+
+
+
+    def _release_reservation(self, order):
+        """
+        Releases whatever cash/shares were reserved for the
+        unfilled portion of an order that was removed from the
+        book without being fully matched (expired or cancelled).
+        """
+
+        trader = self.traders.get(order.trader_id)
+
+        if trader is None:
+            return
+
+
+        if order.side == "BUY":
+
+            trader.portfolio.release_cash(
+                order.remaining_quantity * order.price
+            )
+
+        else:
+
+            trader.portfolio.release_shares(
+                order.symbol,
+                order.remaining_quantity
+            )
+
+
+
     def settle_trade(self, trade):
         """
         Updates buyer and seller portfolios after a trade.
@@ -84,9 +142,16 @@ class MatchingEngine:
         #
         # Release reservations
         #
+        # Release based on each order's *original* submitted price,
+        # since that is the amount that was actually reserved at
+        # submission time. The trade may execute at a different
+        # (better) price than the order's own limit price, and using
+        # trade.price here would leave a small amount of cash/shares
+        # permanently stuck in "reserved" limbo.
+        #
 
         buyer.portfolio.release_cash(
-            trade.quantity * trade.price
+            trade.quantity * trade.buy_order.price
         )
 
         seller.portfolio.release_shares(

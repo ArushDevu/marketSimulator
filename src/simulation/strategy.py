@@ -14,7 +14,7 @@ class BaseStrategy(ABC):
     def generate_orders(
         self,
         exchange,
-        market_data
+        market_data=None
     ):
         """
         Generate one or more orders.

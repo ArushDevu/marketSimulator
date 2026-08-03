@@ -30,7 +30,7 @@ class OrderBook:
 
         # Used to generate unique trade IDs
         self.next_trade_id = 1
-        
+
         # Current simulation step
         self.current_step = 0
 
@@ -43,10 +43,6 @@ class OrderBook:
         Attempts to match against existing orders.
         Any remaining quantity is added to the book.
         """
-
-        # Remove expired orders before matching
-        self.remove_expired_orders()
-
 
         if order.side == "BUY":
 
@@ -230,13 +226,17 @@ class OrderBook:
 
 
 
-    def _create_trade(self, buy_order, sell_order, quantity):
+    def _create_trade(self, buy_order, sell_order, quantity, price):
+        """
+        Creates a trade at the resting ("maker") order's price,
+        not the incoming ("taker") order's price.
+        """
 
         trade = Trade(
             trade_id=self.next_trade_id,
             buy_order=buy_order,
             sell_order=sell_order,
-            price=sell_order.price,
+            price=price,
             quantity=quantity,
             timestamp=max(
                 buy_order.timestamp,
@@ -281,10 +281,13 @@ class OrderBook:
             )
 
 
+            # best_sell is the resting (maker) order, so the trade
+            # executes at its price.
             trade = self._create_trade(
                 buy_order=order,
                 sell_order=best_sell,
-                quantity=trade_quantity
+                quantity=trade_quantity,
+                price=best_sell.price
             )
 
 
@@ -334,10 +337,13 @@ class OrderBook:
             )
 
 
+            # best_buy is the resting (maker) order, so the trade
+            # executes at its price.
             trade = self._create_trade(
                 buy_order=best_buy,
                 sell_order=order,
-                quantity=trade_quantity
+                quantity=trade_quantity,
+                price=best_buy.price
             )
 
 
@@ -359,6 +365,10 @@ class OrderBook:
     def remove_expired_orders(self):
         """
         Removes orders that have passed their expiry step.
+
+        Returns the list of orders that were removed so callers
+        (e.g. MatchingEngine) can release any reserved cash/shares
+        that were held for them.
         """
 
         expired_orders = []
@@ -375,6 +385,9 @@ class OrderBook:
         for order in expired_orders:
 
             self.remove_order(order)
+
+
+        return expired_orders
 
 
     def get_order_book_depth(self):

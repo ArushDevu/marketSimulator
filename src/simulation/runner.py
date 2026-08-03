@@ -21,6 +21,7 @@ sys.path.append(ROOT_DIR)
 
 
 from simulation.strategies.momentum import MomentumStrategy
+from simulation.strategies.mean_reversion import MeanReversionStrategy
 from engine.exchange import Exchange
 from models.trader import Trader
 from simulation.market_simulator import MarketSimulator
@@ -50,19 +51,26 @@ def main():
         name="Trader 2",
         starting_cash=50000
     )
-    
-    
+
+
     trader3 = Trader(
         trader_id=3,
         name="Momentum Trader",
         starting_cash=50000
     )
-    
-    
+
+
     trader4 = Trader(
         trader_id=4,
         name="Market Maker",
         starting_cash=100000
+    )
+
+
+    trader5 = Trader(
+        trader_id=5,
+        name="Mean Reversion Trader",
+        starting_cash=50000
     )
 
 
@@ -77,15 +85,20 @@ def main():
         "AAPL",
         100
     )
-    
+
     trader3.portfolio.add_position(
         "AAPL",
         100
     )
-    
+
     trader4.portfolio.add_position(
         "AAPL",
-        500
+        1000
+    )
+
+    trader5.portfolio.add_position(
+        "AAPL",
+        100
     )
 
 
@@ -98,17 +111,20 @@ def main():
     trader2.initialize_starting_value(initial_prices)
     trader3.initialize_starting_value(initial_prices)
     trader4.initialize_starting_value(initial_prices)
+    trader5.initialize_starting_value(initial_prices)
 
     exchange.register_trader(trader1)
     exchange.register_trader(trader2)
     exchange.register_trader(trader3)
     exchange.register_trader(trader4)
+    exchange.register_trader(trader5)
 
 
     strategy1 = RandomStrategy(trader1)
     strategy2 = RandomStrategy(trader2)
     strategy3 = MomentumStrategy(trader3)
     strategy4 = MarketMakerStrategy(trader4)
+    strategy5 = MeanReversionStrategy(trader5)
 
 
     simulator = MarketSimulator(exchange)
@@ -118,6 +134,7 @@ def main():
     simulator.add_strategy(strategy2)
     simulator.add_strategy(strategy3)
     simulator.add_strategy(strategy4)
+    simulator.add_strategy(strategy5)
 
 
     # Create live chart
@@ -175,7 +192,8 @@ def main():
         trader1,
         trader2,
         trader3,
-        trader4
+        trader4,
+        trader5
     ]:
 
         print(trader.name)

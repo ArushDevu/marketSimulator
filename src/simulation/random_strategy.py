@@ -13,7 +13,7 @@ class RandomStrategy(BaseStrategy):
     def generate_orders(
         self,
         exchange,
-        market_data
+        market_data=None
     ):
 
         symbol = "AAPL"
@@ -23,7 +23,11 @@ class RandomStrategy(BaseStrategy):
         # Use current market price
         #
 
-        current_price = market_data.get_latest_price()
+        current_price = (
+            market_data.get_latest_price()
+            if market_data is not None
+            else None
+        )
 
 
         # Simulation start price

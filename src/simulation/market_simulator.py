@@ -82,13 +82,23 @@ class MarketSimulator:
         ] = starting_value
 
 
+        # Make sure the trader itself also knows its starting value,
+        # since Trader.get_pnl() requires it and callers shouldn't
+        # have to remember to set it up separately.
+        if trader.starting_value is None:
+
+            trader.initialize_starting_value(
+                {"AAPL": latest_price}
+            )
+
+
 
 
     def run_step(self):
         """
         Runs one simulation step.
         """
-        
+
         self.market_data.update_market_price()
 
 
@@ -98,22 +108,22 @@ class MarketSimulator:
                 self.exchange,
                 self.market_data
             )
-            
-            bid = self.exchange.matching_engine.get_best_bid()
-            ask = self.exchange.matching_engine.get_best_ask()
 
-            print(
-                "Step:",
-                self.last_trade_index,
-                "Trades:",
-                len(self.exchange.get_trade_history()),
-                "Bid:",
-                bid.price if bid else None,
-                "Ask:",
-                ask.price if ask else None,
-                "Last:",
-                self.market_data.get_latest_price()
-            )
+        bid = self.exchange.matching_engine.get_best_bid()
+        ask = self.exchange.matching_engine.get_best_ask()
+
+        print(
+            "Step:",
+            self.last_trade_index,
+            "Trades:",
+            len(self.exchange.get_trade_history()),
+            "Bid:",
+            bid.price if bid else None,
+            "Ask:",
+            ask.price if ask else None,
+            "Last:",
+            self.market_data.get_latest_price()
+        )
 
 
 
