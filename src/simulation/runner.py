@@ -62,7 +62,7 @@ def main():
     trader4 = Trader(
         trader_id=4,
         name="Market Maker",
-        starting_cash=50000
+        starting_cash=100000
     )
 
 

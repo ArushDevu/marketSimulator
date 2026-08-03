@@ -3,9 +3,12 @@ from simulation.strategy import BaseStrategy
 
 class MarketMakerStrategy(BaseStrategy):
     """
-    Provides liquidity by placing buy and sell orders
-    around the current market price.
+    Inventory-aware market maker.
+
+    Provides liquidity while controlling inventory risk.
     """
+
+
 
     def generate_orders(
         self,
@@ -13,58 +16,100 @@ class MarketMakerStrategy(BaseStrategy):
         market_data
     ):
 
+
         current_price = market_data.get_latest_price()
+
 
         if current_price is None:
             current_price = 100
 
 
-        spread = 2
 
-        buy_price = current_price - spread // 2
-        sell_price = current_price + spread // 2
+        shares = self.trader.get_position(
+            "AAPL"
+        )
 
+        cash = self.trader.get_cash()
 
-        max_quantity = 10
 
 
         #
-        # BUY SIDE
+        # Inventory limits
         #
 
-        max_buy_quantity = int(
-            self.trader.get_cash() // buy_price
-        )
+        max_inventory = 600
+        min_inventory = 100
 
-        buy_quantity = min(
-            max_quantity,
-            max_buy_quantity
-        )
 
-        if buy_quantity > 0:
+
+        #
+        # Base spread
+        #
+
+        spread = 1
+
+
+
+        #
+        # Adjust spread based on inventory
+        #
+
+        if shares > max_inventory:
+
+            # Too many shares
+            # Make selling easier
+
+            buy_price = current_price - 3
+            sell_price = current_price + 0.5
+
+
+
+        elif shares < min_inventory:
+
+            # Too few shares
+            # Make buying easier
+
+            buy_price = current_price - 0.5
+            sell_price = current_price + 3
+
+
+
+        else:
+
+            buy_price = current_price - spread / 2
+            sell_price = current_price + spread / 2
+
+
+
+
+        quantity = 10
+
+
+
+        #
+        # Submit buy order
+        #
+
+        if cash >= buy_price * quantity:
 
             self.trader.buy(
                 symbol="AAPL",
-                quantity=buy_quantity,
+                quantity=quantity,
                 price=buy_price,
                 exchange=exchange
             )
 
 
+
         #
-        # SELL SIDE
+        # Submit sell order
         #
 
-        sell_quantity = min(
-            max_quantity,
-            self.trader.get_position("AAPL")
-        )
-
-        if sell_quantity > 0:
+        if shares >= quantity:
 
             self.trader.sell(
                 symbol="AAPL",
-                quantity=sell_quantity,
+                quantity=quantity,
                 price=sell_price,
                 exchange=exchange
             )
