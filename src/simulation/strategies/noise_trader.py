@@ -10,7 +10,19 @@ class NoiseTraderStrategy(BaseStrategy):
     Submits MARKET orders with fat-tailed (Pareto-distributed) sizes,
     mimicking the bursty, uninformed order flow you see in real
     markets: mostly small orders, with occasional large ones.
+
+    Already used `return None` (not `[]`) for its no-attempt branches
+    in the original version, so its activity accounting was correct
+    from the start -- part of why it showed up as "always active"
+    relative to strategies like arbitrage/mean-reversion/market-maker
+    that returned `[]` for both "no signal" and "signal fired but
+    order rested unfilled" (see arbitrage.py's docstring). Left
+    functionally as-is; category-mix rebalancing (fewer purely
+    uninformed noise traders relative to informed strategies) is
+    handled in trader_factory.py instead of here.
     """
+
+    category = "noise"
 
     def __init__(self, trader, symbol="AAPL", base_quantity=2, tail_alpha=2.5):
 
@@ -54,9 +66,6 @@ class NoiseTraderStrategy(BaseStrategy):
                 estimate_price = 100
 
 
-            # Rough ceiling so we don't try to buy more than we can
-            # plausibly afford; buy_market() will size the real
-            # reservation more precisely against live liquidity.
             max_quantity = int(
                 self.trader.get_cash() // (estimate_price * 1.05)
             )

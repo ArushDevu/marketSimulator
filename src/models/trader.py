@@ -2,6 +2,15 @@ from models.portfolio import Portfolio
 from models.order import Order
 
 
+# How many *simulation steps* a resting order stays live before it
+# expires. Deliberately based on the exchange's simulation-step clock
+# (Exchange.get_current_step()), not on how many orders have been
+# submitted -- the latter would make orders live for a shrinking
+# fraction of real time as the trader population grows, since more
+# traders means more orders submitted per actual step.
+ORDER_EXPIRY_STEPS = 20
+
+
 class Trader:
     """
     Represents a market participant.
@@ -12,7 +21,8 @@ class Trader:
         self,
         trader_id,
         name,
-        starting_cash
+        starting_cash,
+        category=None
     ):
 
         self.trader_id = trader_id
@@ -24,6 +34,13 @@ class Trader:
 
         # Recorded once before the simulation begins
         self.starting_value = None
+
+        # Optional label (e.g. "noise", "momentum", "market_maker",
+        # "institutional") used to aggregate stats across large
+        # populations of traders where per-trader tracking/plotting
+        # isn't practical. Purely descriptive -- nothing in the
+        # matching/settlement path depends on it.
+        self.category = category
 
 
 
@@ -100,7 +117,7 @@ class Trader:
             return None
 
 
-        current_step = exchange.get_timestamp()
+        order_timestamp = exchange.get_timestamp()
 
 
         order = Order(
@@ -111,8 +128,8 @@ class Trader:
             order_type="LIMIT",
             price=price,
             quantity=quantity,
-            timestamp=current_step,
-            expiry_step=current_step + 100
+            timestamp=order_timestamp,
+            expiry_step=exchange.get_current_step() + ORDER_EXPIRY_STEPS
         )
 
 
@@ -140,7 +157,7 @@ class Trader:
             return None
 
 
-        current_step = exchange.get_timestamp()
+        order_timestamp = exchange.get_timestamp()
 
 
         order = Order(
@@ -151,8 +168,8 @@ class Trader:
             order_type="LIMIT",
             price=price,
             quantity=quantity,
-            timestamp=current_step,
-            expiry_step=current_step + 100
+            timestamp=order_timestamp,
+            expiry_step=exchange.get_current_step() + ORDER_EXPIRY_STEPS
         )
 
 
@@ -204,7 +221,7 @@ class Trader:
             return None
 
 
-        current_step = exchange.get_timestamp()
+        order_timestamp = exchange.get_timestamp()
 
 
         order = Order(
@@ -215,8 +232,8 @@ class Trader:
             order_type="MARKET",
             price=None,
             quantity=quantity,
-            timestamp=current_step,
-            expiry_step=current_step + 100,
+            timestamp=order_timestamp,
+            expiry_step=exchange.get_current_step() + ORDER_EXPIRY_STEPS,
             reservation_price=reservation_price
         )
 
@@ -242,7 +259,7 @@ class Trader:
             return None
 
 
-        current_step = exchange.get_timestamp()
+        order_timestamp = exchange.get_timestamp()
 
 
         order = Order(
@@ -253,8 +270,8 @@ class Trader:
             order_type="MARKET",
             price=None,
             quantity=quantity,
-            timestamp=current_step,
-            expiry_step=current_step + 100
+            timestamp=order_timestamp,
+            expiry_step=exchange.get_current_step() + ORDER_EXPIRY_STEPS
         )
 
 

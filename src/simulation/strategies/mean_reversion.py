@@ -7,18 +7,44 @@ class MeanReversionStrategy(BaseStrategy):
     average (expecting it to bounce back up).
     Sells when the price has risen meaningfully above its recent
     average (expecting it to fall back down).
+
+    See arbitrage.py's docstring for the two changes applied here too:
+    activity semantics (None for "no attempt" vs. the actual
+    trader.buy/sell result), and a volatility-scaled threshold instead
+    of a fixed constant so the strategy naturally activates when
+    today's move is large relative to today's typical noise, and
+    stays quiet during genuinely calm/low-volatility regimes rather
+    than firing on tiny, meaningless drifts.
     """
 
-    def __init__(self, trader, symbol="AAPL", lookback=10, threshold=0.01):
+    category = "mean_reversion"
+
+    def __init__(
+        self,
+        trader,
+        symbol="AAPL",
+        lookback=10,
+        base_threshold=0.006,
+        volatility_scale=1.2
+    ):
 
         super().__init__(trader, symbol)
 
-        # How many recent trade prices to average over
         self.lookback = lookback
+        self.base_threshold = base_threshold
+        self.volatility_scale = volatility_scale
 
-        # Minimum % deviation from the average before acting,
-        # to avoid trading on noise
-        self.threshold = threshold
+
+    def _current_threshold(self, market_data, average_price):
+
+        volatility = market_data.get_recent_volatility(self.symbol)
+
+        if average_price <= 0:
+            return self.base_threshold
+
+        return self.base_threshold + (
+            volatility / average_price
+        ) * self.volatility_scale
 
 
     def generate_orders(
@@ -30,30 +56,28 @@ class MeanReversionStrategy(BaseStrategy):
         prices = market_data.get_recent_prices(self.lookback, self.symbol)
 
         if len(prices) < self.lookback:
-            return []
+            return None
 
 
         average_price = sum(prices) / len(prices)
         latest_price = prices[-1]
 
         if average_price == 0:
-            return []
+            return None
 
         deviation = (latest_price - average_price) / average_price
 
+        threshold = self._current_threshold(market_data, average_price)
 
-        #
-        # Price is well below average -> expect it to revert upward -> buy
-        #
 
-        if deviation < -self.threshold:
+        if deviation < -threshold:
 
             max_quantity = int(
                 self.trader.get_cash() // latest_price
             )
 
             if max_quantity <= 0:
-                return []
+                return None
 
             quantity = min(5, max_quantity)
 
@@ -65,16 +89,12 @@ class MeanReversionStrategy(BaseStrategy):
             )
 
 
-        #
-        # Price is well above average -> expect it to revert downward -> sell
-        #
-
-        elif deviation > self.threshold:
+        elif deviation > threshold:
 
             shares = self.trader.get_position(self.symbol)
 
             if shares <= 0:
-                return []
+                return None
 
             quantity = min(5, shares)
 
@@ -86,4 +106,4 @@ class MeanReversionStrategy(BaseStrategy):
             )
 
 
-        return []
+        return None

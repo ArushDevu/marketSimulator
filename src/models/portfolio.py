@@ -163,3 +163,19 @@ class Portfolio:
         """
 
         return self.cash + self.get_holdings_value(prices)
+
+
+    def charge_fee(self, amount):
+        """
+        Deducts a transaction cost (commission/fee) directly from
+        cash, independent of any buy/sell trade itself. Allowed to
+        take cash negative in principle (a fee shouldn't be able to
+        fail/be silently skipped just because a trader is nearly out
+        of cash -- real brokers still collect commissions), though in
+        practice fees are tiny relative to trade notional.
+        """
+
+        if amount < 0:
+            raise ValueError("Fee amount cannot be negative")
+
+        self.cash -= amount

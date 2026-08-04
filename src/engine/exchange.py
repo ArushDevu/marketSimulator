@@ -8,9 +8,9 @@ class Exchange:
     """
 
 
-    def __init__(self):
+    def __init__(self, commission_model=None):
 
-        self.matching_engine = MatchingEngine()
+        self.matching_engine = MatchingEngine(commission_model=commission_model)
 
         self.next_order_id = 1
         self.current_time = 0
@@ -18,9 +18,6 @@ class Exchange:
 
 
     def get_next_order_id(self):
-        """
-        Generates unique order IDs.
-        """
 
         order_id = self.next_order_id
 
@@ -31,9 +28,6 @@ class Exchange:
 
 
     def get_timestamp(self):
-        """
-        Generates increasing timestamps.
-        """
 
         self.current_time += 1
 
@@ -42,46 +36,46 @@ class Exchange:
 
 
     def register_trader(self, trader):
-        """
-        Registers a trader with the exchange.
-        """
-
         self.matching_engine.register_trader(trader)
 
 
 
-    def get_best_bid(self, symbol="AAPL"):
-        """
-        Returns highest buy order for a symbol.
-        """
+    def set_current_step(self, step):
+        self.matching_engine.set_current_step(step)
 
+
+
+    def get_current_step(self):
+        return self.matching_engine.current_step
+
+
+
+    def drain_pending_trades(self):
+        return self.matching_engine.drain_pending_trades()
+
+
+
+    def get_best_bid(self, symbol="AAPL"):
         return self.matching_engine.get_best_bid(symbol)
 
 
 
     def get_best_ask(self, symbol="AAPL"):
-        """
-        Returns lowest sell order for a symbol.
-        """
-
         return self.matching_engine.get_best_ask(symbol)
 
 
 
     def get_trade_history(self):
-        """
-        Returns completed trades, across all symbols.
-        """
-
         return self.matching_engine.get_trade_history()
 
 
 
-    def cancel_order(self, order_id):
-        """
-        Cancels an active order.
-        """
+    def get_total_trades_executed(self):
+        return self.matching_engine.total_trades_executed
 
+
+
+    def cancel_order(self, order_id):
         return self.matching_engine.cancel_order(order_id)
 
 
@@ -92,13 +86,33 @@ class Exchange:
 
 
     def estimate_market_fill(self, symbol, side, quantity):
-        """
-        Estimates the average execution price and fillable quantity
-        for a market order of the given size, without submitting it.
-        """
 
         return self.matching_engine.estimate_market_fill(
             symbol,
             side,
             quantity
+        )
+
+
+
+    def get_registered_traders(self):
+        """
+        Returns every Trader registered with the exchange. Used by
+        health-check / diagnostic reporting rather than by the
+        matching path itself.
+        """
+
+        return list(self.matching_engine.traders.values())
+
+
+
+    def get_active_order_count(self):
+        """
+        Total number of orders currently resting across every
+        symbol's book -- a quick liquidity sanity check.
+        """
+
+        return sum(
+            len(book.orders)
+            for book in self.matching_engine.order_books.values()
         )
